@@ -22,7 +22,7 @@ function CopyableCode({ children }: { children: string }) {
 
   return (
     <div className="relative">
-      <pre className="bg-gray-100 dark:bg-gray-700 p-4 rounded overflow-x-auto hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200">
+      <pre className="bg-gray-100 p-4 rounded overflow-x-auto hover:bg-gray-200 transition-colors duration-200">
         <code>{children}</code>
       </pre>
       <Button

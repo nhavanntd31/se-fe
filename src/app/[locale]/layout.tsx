@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Metadata } from "next";
-import { ThemeProvider } from "@/components/theme-provider";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { jsonLdScriptProps } from "react-schemaorg";
 import { WebSite } from "schema-dts";
@@ -47,16 +46,9 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <NextIntlClientProvider>
-            <RouteGuard>{children}</RouteGuard>
-          </NextIntlClientProvider>
-        </ThemeProvider>
+        <NextIntlClientProvider>
+          <RouteGuard>{children}</RouteGuard>
+        </NextIntlClientProvider>
         <Analytics />
         <SpeedInsights />
       </body>

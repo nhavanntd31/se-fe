@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import LanguageSwitcher from "../LanguageSwitcher";
-import { ModeToggle } from "../ModeToggle";
 import Logo from "@/public/assets/images/logo1.png";
 import Image from "next/image";
 
@@ -66,7 +65,6 @@ export default function Header() {
         <div className="hidden md:flex items-center space-x-4">
           <div className="flex gap-2 sm:gap-4 items-center">
             <LanguageSwitcher />
-            <ModeToggle />
           </div>
         </div>
       </div>
@@ -91,7 +89,6 @@ export default function Header() {
             <Link href="/contact" className={mobileNavLinkClasses} onClick={toggleMenu}>Contact</Link>
             <div className="flex justify-center gap-4 pt-2">
               <LanguageSwitcher />
-              <ModeToggle />
             </div>
           </div>
         </div>

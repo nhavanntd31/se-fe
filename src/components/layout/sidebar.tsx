@@ -2,7 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Settings, User, FileText, BarChart4, ChevronDown, Upload, Bell, TrendingUp } from 'lucide-react'
+import { LayoutDashboard, Settings, User, FileText, BarChart4, ChevronDown, Upload, Bell, TrendingUp, ClipboardList } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { usePathname } from 'next/navigation'
@@ -160,12 +160,23 @@ export function Sidebar({ className }: SidebarProps) {
                 </Button>
               </Link>
             </motion.div>
+
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link href="/plo">
+                <Button variant={isActive('/plo') ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                  <ClipboardList className="h-4 w-4" />
+                  PLO Analysis
+                </Button>
+              </Link>
+            </motion.div>
   
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button variant={isActive('/results') ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                <BarChart4 className="h-4 w-4" />
-                Thử mô hình
-              </Button>
+              <Link href="/prediction">
+                <Button variant={isActive('/prediction') ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Thử mô hình
+                </Button>
+              </Link>
             </motion.div>
           </div>
         </div>

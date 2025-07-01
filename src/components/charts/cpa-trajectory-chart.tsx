@@ -81,27 +81,31 @@ export function CPATrajectoryChart({ data }: CPATrajectoryChartProps) {
   };
 
   const getThresholdColor = (threshold: number) => {
-    const colors = {
-      5: '#fde68a',   
-      10: '#fdba74',  
-      15: '#f87171', 
-      20: '#a78bfa', 
-      25: '#6ee7b7', 
-      30: '#93c5fd'  
+    const baseColor = '#3b82f6';
+    const opacityMap = {
+      5: 0.9,   
+      10: 0.8,  
+      15: 0.7, 
+      20: 0.6, 
+      25: 0.5, 
+      30: 0.4  
     };
-    return colors[threshold as keyof typeof colors] || '#d1d5db';
+    const opacity = opacityMap[threshold as keyof typeof opacityMap] || 0.3;
+    return `${baseColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
   };
 
   const getThresholdStroke = (threshold: number) => {
-    const colors = {
-      5: '#d97706',   
-      10: '#c2410c',  
-      15: '#b91c1c', 
-      20: '#6d28d9', 
-      25: '#047857', 
-      30: '#1d4ed8'  
+    const baseColor = '#1d4ed8';
+    const opacityMap = {
+      5: 0.9,   
+      10: 0.8,  
+      15: 0.7, 
+      20: 0.6, 
+      25: 0.5, 
+      30: 0.4  
     };
-    return colors[threshold as keyof typeof colors] || '#4b5563';
+    const opacity = opacityMap[threshold as keyof typeof opacityMap] || 0.3;
+    return `${baseColor}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -181,7 +185,7 @@ export function CPATrajectoryChart({ data }: CPATrajectoryChartProps) {
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
