@@ -155,7 +155,7 @@ export function StudentCoursesModal({
                           <TableCell className="text-center">
                             {course.finalGrade ? (
                               <Badge 
-                                variant={getGradeBadgeColor(course.finalGrade)}
+                                variant={getGradeBadgeColor(course.finalGrade) as any}
                                 className="font-medium"
                               >
                                 {course.finalGrade}
