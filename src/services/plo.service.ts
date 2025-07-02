@@ -10,13 +10,22 @@ const getAuthHeaders = () => {
   }
 }
 
-export interface PLOAnalysisResponse {
+export interface PLOResult {
+  fileIndex: number
+  fileName: string
   analyze: string
   bloom: string
-  analyzeContentType: string
-  bloomContentType: string
   analyzeContent?: string
   bloomTable?: any[]
+  analyzeContentType: string
+  bloomContentType: string
+  error?: string
+}
+
+export interface PLOAnalysisResponse {
+  results: PLOResult[]
+  totalFiles: number
+  successfulFiles: number
 }
 
 export const analyzePLO = async (formData: FormData): Promise<PLOAnalysisResponse> => {

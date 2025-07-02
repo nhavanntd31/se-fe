@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Upload, FileText, Settings, Download, Loader2, CheckCircle2, XCircle, FileDown } from "lucide-react"
+import { Upload, FileText, Settings, Download, Loader2, CheckCircle2, XCircle, FileDown, Files, X } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 import { useState, useRef } from "react"
-import { analyzePLO } from "@/services/plo.service"
+import { analyzePLO, PLOResult, PLOAnalysisResponse } from "@/services/plo.service"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -15,24 +16,28 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 export default function PLOPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisStatus, setAnalysisStatus] = useState<"idle" | "analyzing" | "success" | "fail">("idle")
-  const [analysisResult, setAnalysisResult] = useState<{
-    analyze: string
-    bloom: string
-    analyzeContentType: string
-    bloomContentType: string
-    analyzeContent?: string
-    bloomTable?: any[]
-  } | null>(null)
+  const [analysisResult, setAnalysisResult] = useState<PLOAnalysisResponse | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   
-  const excelFileRef = useRef<HTMLInputElement>(null)
   const paramFileRef = useRef<HTMLInputElement>(null)
 
-  const handleAnalyzePLO = async () => {
-    const excelFile = excelFileRef.current?.files?.[0]
+  const handleFileSelect = (file: File | null, index: number) => {
+    if (!file) return
     
-    if (!excelFile) {
-      setErrorMessage('Vui lòng chọn file Excel')
+    const newFiles = [...selectedFiles]
+    newFiles[index] = file
+    setSelectedFiles(newFiles)
+  }
+
+  const handleRemoveFile = (index: number) => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index)
+    setSelectedFiles(newFiles)
+  }
+
+  const handleAnalyzePLO = async () => {
+    if (selectedFiles.length === 0) {
+      setErrorMessage('Vui lòng chọn ít nhất 1 file Excel')
       return
     }
 
@@ -42,7 +47,10 @@ export default function PLOPage() {
     
     try {
       const formData = new FormData()
-      formData.append('excel', excelFile)
+      
+      selectedFiles.forEach(file => {
+        formData.append('excel', file)
+      })
       
       const paramFile = paramFileRef.current?.files?.[0]
       if (paramFile) {
@@ -62,27 +70,27 @@ export default function PLOPage() {
   }
 
   const handleClear = () => {
-    if (excelFileRef.current) excelFileRef.current.value = ''
+    setSelectedFiles([])
     if (paramFileRef.current) paramFileRef.current.value = ''
     setErrorMessage("")
     setAnalysisResult(null)
   }
 
-  const handleDownloadAnalyze = () => {
-    if (!analysisResult) return
+  const handleDownloadAnalyze = (result: PLOResult) => {
+    if (!result.analyze) return
     
-    const byteCharacters = atob(analysisResult.analyze)
+    const byteCharacters = atob(result.analyze)
     const byteNumbers = new Array(byteCharacters.length)
     for (let i = 0; i < byteCharacters.length; i++) {
       byteNumbers[i] = byteCharacters.charCodeAt(i)
     }
     const byteArray = new Uint8Array(byteNumbers)
-    const blob = new Blob([byteArray], { type: analysisResult.analyzeContentType })
+    const blob = new Blob([byteArray], { type: result.analyzeContentType })
     
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'plo-analysis.md'
+    a.download = `${result.fileName.replace(/\.[^/.]+$/, "")}-analysis.md`
     document.body.appendChild(a)
     a.click()
     setTimeout(() => {
@@ -91,21 +99,21 @@ export default function PLOPage() {
     }, 100)
   }
 
-  const handleDownloadBloom = () => {
-    if (!analysisResult) return
+  const handleDownloadBloom = (result: PLOResult) => {
+    if (!result.bloom) return
     
-    const byteCharacters = atob(analysisResult.bloom)
+    const byteCharacters = atob(result.bloom)
     const byteNumbers = new Array(byteCharacters.length)
     for (let i = 0; i < byteCharacters.length; i++) {
       byteNumbers[i] = byteCharacters.charCodeAt(i)
     }
     const byteArray = new Uint8Array(byteNumbers)
-    const blob = new Blob([byteArray], { type: analysisResult.bloomContentType })
+    const blob = new Blob([byteArray], { type: result.bloomContentType })
     
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'bloom-table.xlsx'
+    a.download = `${result.fileName.replace(/\.[^/.]+$/, "")}-bloom-table.xlsx`
     document.body.appendChild(a)
     a.click()
     setTimeout(() => {
@@ -142,6 +150,8 @@ export default function PLOPage() {
   "prompt": "..."
 }`
 
+  const canAddMoreFiles = selectedFiles.length < 5
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
@@ -150,24 +160,62 @@ export default function PLOPage() {
           <h2 className="text-3xl font-bold tracking-tight">PLO Analysis</h2>
         </div>
 
-        <Card >
+        <Card>
           <CardHeader>
             <CardTitle>Phân tích chuẩn đầu ra chương trình đào tạo (PLO)</CardTitle>
           </CardHeader>
-          <CardContent >
+          <CardContent>
             <div className="grid gap-6">
               <div className="space-y-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <label htmlFor="excelFile" className="text-sm font-medium">Excel File</label>
-                  <Input 
-                    id="excelFile" 
-                    ref={excelFileRef} 
-                    type="file" 
-                    accept=".xlsx,.xls" 
-                    className="col-span-4" 
-                    required
-                  />
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Excel Files (Max 5)</label>
+                  
+                  {Array.from({ length: Math.max(1, selectedFiles.length + (canAddMoreFiles ? 1 : 0)) }, (_, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      {selectedFiles[index] ? (
+                        <>
+                          <div className="flex-1 px-3 py-2 border rounded-md bg-green-50 border-green-200">
+                            <span className="text-sm text-green-700 font-medium">
+                              {selectedFiles[index].name}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveFile(index)}
+                            disabled={isAnalyzing}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : (
+                        <div className="flex-1">
+                          <Input 
+                            type="file" 
+                            accept=".xlsx,.xls" 
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) {
+                                handleFileSelect(file, index)
+                                e.target.value = ''
+                              }
+                            }}
+                            disabled={isAnalyzing || (index >= selectedFiles.length && !canAddMoreFiles)}
+                            className="cursor-pointer file:cursor-pointer"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
+                
+                {selectedFiles.length > 0 && (
+                  <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded">
+                    <Files className="h-4 w-4 inline mr-2" />
+                    Đã chọn {selectedFiles.length} file: {selectedFiles.map(f => f.name).join(', ')}
+                  </div>
+                )}
                 
                 <div className="bg-gray-50 p-3 rounded-lg text-sm">
                   <div className="font-medium mb-2 flex items-center justify-between">
@@ -247,7 +295,7 @@ export default function PLOPage() {
               </Button>
               <Button 
                 onClick={handleAnalyzePLO}
-                disabled={isAnalyzing}
+                disabled={isAnalyzing || selectedFiles.length === 0}
                 className="gap-2"
               >
                 {isAnalyzing ? (
@@ -267,99 +315,125 @@ export default function PLOPage() {
         </Card>
 
         {analysisResult && (
-          <>
-            <Card>
-              <CardHeader>
-                <CardTitle>Kết quả phân tích</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-4">
-                  <Button onClick={handleDownloadAnalyze} className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Download Analysis (MD)
-                  </Button>
-                  <Button onClick={handleDownloadBloom} className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Download Bloom Table (Excel)
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {analysisResult.analyzeContent && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Chi tiết phân tích PLO</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-96 w-full rounded-md border p-4">
-                    <div 
-                      className="prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ 
-                        __html: analysisResult.analyzeContent
-                          .replace(/### /g, '<h3 class="text-lg font-semibold mt-4 mb-2">')
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/\n/g, '<br/>') 
-                      }}
-                    />
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            )}
-
-            {analysisResult.bloomTable && analysisResult.bloomTable.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Bảng ánh xạ Bloom</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Mã PLO</TableHead>
-                          <TableHead>Mô tả rút gọn</TableHead>
-                          <TableHead>Nhóm Năng lực</TableHead>
-                          <TableHead>Tiến trình nhận thức</TableHead>
-                          <TableHead>Loại kiến thức</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {analysisResult.bloomTable.map((row: any[], index: number) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-medium">{row[0]}</TableCell>
-                            <TableCell>{row[1]}</TableCell>
-                            <TableCell>{row[2]}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                row[3] === 'Apply' ? 'bg-blue-100 text-blue-800' :
-                                row[3] === 'Create' ? 'bg-green-100 text-green-800' :
-                                row[3] === 'Analyze' ? 'bg-purple-100 text-purple-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {row[3]}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                row[4] === 'Procedural Knowledge' ? 'bg-orange-100 text-orange-800' :
-                                row[4] === 'Conceptual Knowledge' ? 'bg-indigo-100 text-indigo-800' :
-                                row[4] === 'Meta-Cognitive Knowledge' ? 'bg-pink-100 text-pink-800' :
-                                row[4] === 'Factual Knowledge' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {row[4]}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Kết quả phân tích</span>
+                <span className="text-sm font-normal text-gray-600">
+                  {analysisResult.successfulFiles}/{analysisResult.totalFiles} files thành công
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Carousel className="w-full max-w-6xl mx-auto" opts={{ loop: true }}>
+                <CarouselContent>
+                  {analysisResult.results.map((result, index) => (
+                    <CarouselItem key={index}>
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-4 mb-4">
+                            <CarouselPrevious className="relative top-0 left-0 translate-x-0 translate-y-0" />
+                            <h3 className="text-lg font-semibold">{result.fileName}</h3>
+                            <CarouselNext className="relative top-0 right-0 translate-x-0 translate-y-0" />
+                          </div>
+                          {result.error ? (
+                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                              Lỗi: {result.error}
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex gap-4 justify-center mb-6">
+                                <Button onClick={() => handleDownloadAnalyze(result)} className="gap-2">
+                                  <Download className="h-4 w-4" />
+                                  Download MD
+                                </Button>
+                                <Button onClick={() => handleDownloadBloom(result)} className="gap-2">
+                                  <Download className="h-4 w-4" />
+                                  Download Bloom
+                                </Button>
+                              </div>
+                              {result.analyzeContent && (
+                                <Card className="mb-6 ">
+                                  <CardHeader>
+                                    <CardTitle>Chi tiết phân tích PLO</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <ScrollArea className="h-96 w-full rounded-md border p-4">
+                                      <div 
+                                        className="prose prose-sm max-w-none"
+                                        dangerouslySetInnerHTML={{ 
+                                          __html: result.analyzeContent
+                                            .replace(/### /g, '<h3 class="text-lg font-semibold mt-4 mb-2">')
+                                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                            .replace(/\n/g, '<br/>') 
+                                        }}
+                                      />
+                                    </ScrollArea>
+                                  </CardContent>
+                                </Card>
+                              )}
+                              {result.bloomTable && result.bloomTable.length > 0 && (
+                                <Card>
+                                  <CardHeader>
+                                    <CardTitle>Bảng ánh xạ Bloom</CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="rounded-md border">
+                                      <Table>
+                                        <TableHeader>
+                                          <TableRow>
+                                            <TableHead>Mã PLO</TableHead>
+                                            <TableHead>Mô tả rút gọn</TableHead>
+                                            <TableHead>Nhóm Năng lực</TableHead>
+                                            <TableHead>Tiến trình nhận thức</TableHead>
+                                            <TableHead>Loại kiến thức</TableHead>
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {result.bloomTable.map((row: any[], rowIndex: number) => (
+                                            <TableRow key={rowIndex}>
+                                              <TableCell className="font-medium">{row[0]}</TableCell>
+                                              <TableCell>{row[1]}</TableCell>
+                                              <TableCell>{row[2]}</TableCell>
+                                              <TableCell>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                  row[3] === 'Apply' ? 'bg-blue-100 text-blue-800' :
+                                                  row[3] === 'Create' ? 'bg-green-100 text-green-800' :
+                                                  row[3] === 'Analyze' ? 'bg-purple-100 text-purple-800' :
+                                                  'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                  {row[3]}
+                                                </span>
+                                              </TableCell>
+                                              <TableCell>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                  row[4] === 'Procedural Knowledge' ? 'bg-orange-100 text-orange-800' :
+                                                  row[4] === 'Conceptual Knowledge' ? 'bg-indigo-100 text-indigo-800' :
+                                                  row[4] === 'Meta-Cognitive Knowledge' ? 'bg-pink-100 text-pink-800' :
+                                                  row[4] === 'Factual Knowledge' ? 'bg-yellow-100 text-yellow-800' :
+                                                  'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                  {row[4]}
+                                                </span>
+                                              </TableCell>
+                                            </TableRow>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+              </Carousel>
+            </CardContent>
+          </Card>
         )}
 
         <Dialog open={analysisStatus !== "idle"} onOpenChange={handleCloseStatusModal}>
@@ -376,7 +450,12 @@ export default function PLOPage() {
             {analysisStatus === "success" && (
               <>
                 <CheckCircle2 className="h-10 w-10 text-green-600 mx-auto" />
-                <div className="text-center text-green-700 font-medium">Phân tích PLO thành công!</div>
+                <div className="text-center text-green-700 font-medium">
+                  Phân tích PLO thành công!<br/>
+                  <span className="text-sm">
+                    {analysisResult?.successfulFiles}/{analysisResult?.totalFiles} files
+                  </span>
+                </div>
                 <Button className="mt-2 w-full" onClick={handleCloseStatusModal}>Đóng</Button>
               </>
             )}
