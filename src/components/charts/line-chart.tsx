@@ -35,15 +35,6 @@ export function LineChart({ data }: LineChartProps) {
         labels,
         datasets: [
           {
-            label: "GPA",
-            data: gpaData,
-            borderColor: "rgb(59, 130, 246)",
-            backgroundColor: "rgba(59, 130, 246, 0.1)",
-            tension: 0.4,
-            borderWidth: 2,
-            pointRadius: 3,
-          },
-          {
             label: "CPA",
             data: cpaData,
             borderColor: "rgb(236, 72, 153)",

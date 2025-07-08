@@ -36,21 +36,7 @@ export function CPAAnalysisCard({
             cpa: item.averageCPA
           })) || []
         } />
-        
-        <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-          <div className="text-center p-2 bg-blue-50 rounded">
-            <div className="font-medium text-blue-700">
-              {statistics?.averageGPA?.toFixed(2) || "0.00"}
-            </div>
-            <div className="text-blue-600 text-xs">GPA Trung bình</div>
-          </div>
-          <div className="text-center p-2 bg-green-50 rounded">
-            <div className="font-medium text-green-700">
-              {statistics?.totalStudents || 0}
-            </div>
-            <div className="text-green-600 text-xs">Tổng SV {scope}</div>
-          </div>
-        </div>
+
       </CardContent>
     </Card>
   );
