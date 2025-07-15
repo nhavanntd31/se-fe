@@ -2,7 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Settings, User, FileText, BarChart4, ChevronDown, Upload, Bell, TrendingUp, ClipboardList } from 'lucide-react'
+import { LayoutDashboard, Settings, User, FileText, BarChart4, ChevronDown, Upload, Bell, TrendingUp, ClipboardList, CheckCircle } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { usePathname } from 'next/navigation'
@@ -166,6 +166,15 @@ export function Sidebar({ className }: SidebarProps) {
                 <Button variant={isActive('/plo') ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                   <ClipboardList className="h-4 w-4" />
                   PLO Analysis
+                </Button>
+              </Link>
+            </motion.div>
+
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link href="/clo">
+                <Button variant={isActive('/clo') ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  CLO Management
                 </Button>
               </Link>
             </motion.div>

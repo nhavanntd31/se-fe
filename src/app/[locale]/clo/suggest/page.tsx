@@ -1,0 +1,390 @@
+"use client"
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Sidebar } from "@/components/layout/sidebar"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Upload, FileText, Settings, Download, Loader2, CheckCircle2, XCircle, FileDown, X } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useState, useRef } from "react"
+import { suggestCLO, CLOSuggestResult } from "@/services/clo.service"
+import { Textarea } from "@/components/ui/textarea"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { ScrollArea } from "@/components/ui/scroll-area"
+
+export default function CLOSuggestPage() {
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analysisStatus, setAnalysisStatus] = useState<"idle" | "analyzing" | "success" | "fail">("idle")
+  const [analysisResult, setAnalysisResult] = useState<CLOSuggestResult | null>(null)
+  const [errorMessage, setErrorMessage] = useState("")
+  const [selectedSyllabusFile, setSelectedSyllabusFile] = useState<File | null>(null)
+  const [prompt, setPrompt] = useState("")
+  
+  const paramFileRef = useRef<HTMLInputElement>(null)
+  const syllabusFileRef = useRef<HTMLInputElement>(null)
+
+  const handleFileSelect = (file: File | null, type: 'syllabus') => {
+    if (!file) return
+    setSelectedSyllabusFile(file)
+  }
+
+  const handleRemoveFile = (type: 'syllabus') => {
+    if (type === 'syllabus') {
+      setSelectedSyllabusFile(null)
+      if (syllabusFileRef.current) syllabusFileRef.current.value = ''
+    }
+  }
+
+  const handleSuggestCLO = async () => {
+    if (!selectedSyllabusFile) {
+      setErrorMessage('Vui lòng chọn file đề cương môn học')
+      return
+    }
+
+    if (!prompt.trim()) {
+      setErrorMessage('Vui lòng nhập prompt')
+      return
+    }
+
+    setIsAnalyzing(true)
+    setAnalysisStatus("analyzing")
+    setErrorMessage("")
+    
+    try {
+      const formData = new FormData()
+      formData.append('syllabus', selectedSyllabusFile)
+      formData.append('prompt', prompt)
+      
+      const paramFile = paramFileRef.current?.files?.[0]
+      if (paramFile) {
+        formData.append('param', paramFile)
+      }
+
+      const response = await suggestCLO(formData)
+      setAnalysisResult(response)
+      setAnalysisStatus("success")
+    } catch (error) {
+      console.error('CLO suggestion failed:', error)
+      setErrorMessage('Tạo CLO thất bại. Vui lòng thử lại.')
+      setAnalysisStatus("fail")
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
+  const handleClear = () => {
+    setSelectedSyllabusFile(null)
+    setPrompt("")
+    if (paramFileRef.current) paramFileRef.current.value = ''
+    if (syllabusFileRef.current) syllabusFileRef.current.value = ''
+    setErrorMessage("")
+    setAnalysisResult(null)
+  }
+
+  const handleDownloadMarkdown = () => {
+    if (!analysisResult?.markdown) return
+    
+    const byteCharacters = atob(analysisResult.markdown)
+    const byteNumbers = new Array(byteCharacters.length)
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i)
+    }
+    const byteArray = new Uint8Array(byteNumbers)
+    const blob = new Blob([byteArray], { type: analysisResult.markdownContentType })
+    
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${analysisResult.fileName.replace(/\.[^/.]+$/, "")}-clo-suggestion.md`
+    document.body.appendChild(a)
+    a.click()
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    }, 100)
+  }
+
+  const handleDownloadExcel = () => {
+    if (!analysisResult?.excel) return
+    
+    const byteCharacters = atob(analysisResult.excel)
+    const byteNumbers = new Array(byteCharacters.length)
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i)
+    }
+    const byteArray = new Uint8Array(byteNumbers)
+    const blob = new Blob([byteArray], { type: analysisResult.excelContentType })
+    
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${analysisResult.fileName.replace(/\.[^/.]+$/, "")}-clo-list.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    }, 100)
+  }
+
+  const handleCloseStatusModal = () => setAnalysisStatus("idle")
+
+  const handleDownloadExampleParam = () => {
+    const link = document.createElement('a')
+    link.href = '/plo_param.json'
+    link.download = 'clo_param.json'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const exampleParamContent = `{
+  "api_key": "sk-...",
+  "model": "mistralai/mistral-small-3.2-24b-instruct:free",
+  "temperature": 0.2,
+  "system_instruction": "Bạn là chuyên gia kiểm định chất lượng giáo dục đại học..."
+}`
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <Sidebar />
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-3xl font-bold tracking-tight">CLO Suggest</h2>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Tạo chuẩn đầu ra học phần (CLO) từ đề cương môn học</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6">
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Prompt</label>
+                  <Textarea
+                    placeholder="Nhập prompt để hướng dẫn tạo CLO..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    rows={4}
+                    className="resize-none"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">File đề cương môn học</label>
+                  <div className="flex items-center gap-2">
+                    {selectedSyllabusFile ? (
+                      <>
+                        <div className="flex-1 px-3 py-2 border rounded-md bg-green-50 border-green-200">
+                          <span className="text-sm text-green-700 font-medium">
+                            {selectedSyllabusFile.name}
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFile('syllabus')}
+                          disabled={isAnalyzing}
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <Input
+                        ref={syllabusFileRef}
+                        type="file"
+                        onChange={(e) => handleFileSelect(e.target.files?.[0] || null, 'syllabus')}
+                        disabled={isAnalyzing}
+                        accept=".pdf,.doc,.docx,.txt"
+                        className="cursor-pointer"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <label htmlFor="paramFile" className="text-sm font-medium">Parameter File (Tùy chọn)</label>
+                    <Input 
+                      id="paramFile" 
+                      ref={paramFileRef} 
+                      type="file" 
+                      accept=".json" 
+                      className="col-span-4"
+                      disabled={isAnalyzing}
+                    />
+                  </div>
+                  
+                  <div className="bg-gray-50 p-3 rounded-lg text-sm">
+                    <div className="font-medium mb-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Parameter File Example:
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleDownloadExampleParam}
+                        className="gap-1 text-xs h-7"
+                      >
+                        <FileDown className="h-3 w-3" />
+                        Download Example
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={exampleParamContent}
+                      readOnly
+                      className="text-xs font-mono bg-white"
+                      rows={6}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm mt-4">
+                {errorMessage}
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button 
+                variant="outline" 
+                onClick={handleClear}
+                disabled={isAnalyzing}
+              >
+                Clear
+              </Button>
+              <Button 
+                onClick={handleSuggestCLO}
+                disabled={isAnalyzing || !selectedSyllabusFile || !prompt.trim()}
+                className="gap-2"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Tạo CLO...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    Tạo CLO
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {analysisResult && !analysisResult.error && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Kết quả tạo CLO</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="flex gap-4 justify-center mb-6">
+                  <Button onClick={handleDownloadMarkdown} className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Download Markdown
+                  </Button>
+                  <Button onClick={handleDownloadExcel} className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Download Excel
+                  </Button>
+                </div>
+
+                {analysisResult.markdownContent && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Nội dung Markdown</h3>
+                    <ScrollArea className="h-96 w-full border rounded-md p-4">
+                      <pre className="text-sm whitespace-pre-wrap">{analysisResult.markdownContent}</pre>
+                    </ScrollArea>
+                  </div>
+                )}
+
+                {analysisResult.cloList && analysisResult.cloList.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Danh sách CLO</h3>
+                    <ScrollArea className="h-64 w-full">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>STT</TableHead>
+                            <TableHead>Mã CLO</TableHead>
+                            <TableHead>Nội dung</TableHead>
+                            <TableHead>Mức độ tư duy</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {analysisResult.cloList.map((clo: any, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell className="font-medium">{clo.code || `CLO${index + 1}`}</TableCell>
+                              <TableCell>{clo.content || clo.description}</TableCell>
+                              <TableCell>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  clo.level === 'Apply' ? 'bg-blue-100 text-blue-800' :
+                                  clo.level === 'Create' ? 'bg-green-100 text-green-800' :
+                                  clo.level === 'Analyze' ? 'bg-purple-100 text-purple-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {clo.level || 'N/A'}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {analysisResult?.error && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                Lỗi: {analysisResult.error}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Dialog open={analysisStatus !== "idle"} onOpenChange={handleCloseStatusModal}>
+          <DialogContent className="flex flex-col items-center justify-center gap-4 max-w-xs">
+            <DialogHeader>
+              <DialogTitle>CLO Suggestion</DialogTitle>
+            </DialogHeader>
+            {analysisStatus === "analyzing" && (
+              <>
+                <Loader2 className="h-10 w-10 animate-spin text-blue-600 mx-auto" />
+                <div className="text-center text-muted-foreground">Đang tạo CLO, vui lòng chờ...</div>
+              </>
+            )}
+            {analysisStatus === "success" && (
+              <>
+                <CheckCircle2 className="h-10 w-10 text-green-600 mx-auto" />
+                <div className="text-center text-green-700 font-medium">Tạo CLO thành công!</div>
+                <Button className="mt-2 w-full" onClick={handleCloseStatusModal}>Đóng</Button>
+              </>
+            )}
+            {analysisStatus === "fail" && (
+              <>
+                <XCircle className="h-10 w-10 text-red-600 mx-auto" />
+                <div className="text-center text-red-700 font-medium">Tạo CLO thất bại!</div>
+                <Button className="mt-2 w-full" onClick={handleCloseStatusModal}>Đóng</Button>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  )
+} 

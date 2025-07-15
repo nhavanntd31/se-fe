@@ -10,6 +10,10 @@ const getAuthHeaders = () => {
   }
 }
 
+export interface PLOAnalyzeDto {
+  prompt: string
+}
+
 export interface PLOResult {
   fileIndex: number
   fileName: string

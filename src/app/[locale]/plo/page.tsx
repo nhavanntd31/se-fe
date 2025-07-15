@@ -19,6 +19,7 @@ export default function PLOPage() {
   const [analysisResult, setAnalysisResult] = useState<PLOAnalysisResponse | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [prompt, setPrompt] = useState("")
   
   const paramFileRef = useRef<HTMLInputElement>(null)
 
@@ -41,6 +42,11 @@ export default function PLOPage() {
       return
     }
 
+    if (!prompt.trim()) {
+      setErrorMessage('Vui lòng nhập prompt')
+      return
+    }
+
     setIsAnalyzing(true)
     setAnalysisStatus("analyzing")
     setErrorMessage("")
@@ -51,6 +57,8 @@ export default function PLOPage() {
       selectedFiles.forEach(file => {
         formData.append('excel', file)
       })
+      
+      formData.append('prompt', prompt)
       
       const paramFile = paramFileRef.current?.files?.[0]
       if (paramFile) {
@@ -71,6 +79,7 @@ export default function PLOPage() {
 
   const handleClear = () => {
     setSelectedFiles([])
+    setPrompt("")
     if (paramFileRef.current) paramFileRef.current.value = ''
     setErrorMessage("")
     setAnalysisResult(null)
@@ -146,8 +155,7 @@ export default function PLOPage() {
   "api_key": "sk-...",
   "model": "mistralai/mistral-small-3.2-24b-instruct:free",
   "temperature": 0.2,
-  "system_instruction": "Bạn là chuyên gia kiểm định chất lượng giáo dục đại học...",
-  "prompt": "..."
+  "system_instruction": "Bạn là chuyên gia kiểm định chất lượng giáo dục đại học..."
 }`
 
   const canAddMoreFiles = selectedFiles.length < 5
@@ -167,6 +175,17 @@ export default function PLOPage() {
           <CardContent>
             <div className="grid gap-6">
               <div className="space-y-4">
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Prompt</label>
+                  <Textarea
+                    placeholder="Nhập prompt để hướng dẫn phân tích PLO..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    rows={4}
+                    className="resize-none"
+                  />
+                </div>
+
                 <div className="space-y-3">
                   <label className="text-sm font-medium">Excel Files (Max 5)</label>
                   
@@ -295,7 +314,7 @@ export default function PLOPage() {
               </Button>
               <Button 
                 onClick={handleAnalyzePLO}
-                disabled={isAnalyzing || selectedFiles.length === 0}
+                disabled={isAnalyzing || selectedFiles.length === 0 || !prompt.trim()}
                 className="gap-2"
               >
                 {isAnalyzing ? (
