@@ -4,22 +4,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Upload, FileText, Settings, Download, Loader2, CheckCircle2, XCircle, FileDown, X } from "lucide-react"
+import { Upload, FileText, Settings, Download, Loader2, CheckCircle2, XCircle, FileDown, X, ArrowLeft } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { checkCLO, CLOCheckResult } from "@/services/clo.service"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
+
+const defaultPrompt = `Bạn là chuyên gia đánh giá chuẩn đầu ra học phần (CLO) theo OBE/Bloom.
+Dựa trên đề cương học phần và danh sách CLO hiện có, hãy lập bảng nhận xét gồm 4 cột:
+| # | Nội dung CLO | I/R/M | Nhận xét/Justification |
+Yêu cầu:
+- Xác định mức I/R/M thích hợp dựa trên phạm vi và độ sâu kiến thức trong syllabus.
+- Nhận xét ngắn gọn (≤40 từ) về sự đầy đủ, động từ Bloom, và mức alignment.
+- Nếu CLO mơ hồ hoặc thiếu căn cứ, đánh dấu ⚠️ trong cột Nhận xét.
+- Không thêm CLO mới. Trả về bảng Markdown duy nhất, không giải thích ngoài bảng.`
+
 export default function CLOCheckPage() {
+  const router = useRouter()
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisStatus, setAnalysisStatus] = useState<"idle" | "analyzing" | "success" | "fail">("idle")
   const [analysisResult, setAnalysisResult] = useState<CLOCheckResult | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
   const [selectedSyllabusFile, setSelectedSyllabusFile] = useState<File | null>(null)
   const [selectedCLOFile, setSelectedCLOFile] = useState<File | null>(null)
-  const [prompt, setPrompt] = useState("")
+  const [prompt, setPrompt] = useState(defaultPrompt)
   
   const paramFileRef = useRef<HTMLInputElement>(null)
   const syllabusFileRef = useRef<HTMLInputElement>(null)
@@ -167,7 +179,17 @@ export default function CLOCheckPage() {
       <Sidebar />
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">CLO Check</h2>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/clo')}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h2 className="text-3xl font-bold tracking-tight">CLO Check</h2>
+          </div>
         </div>
 
         <Card>
@@ -214,7 +236,7 @@ export default function CLOCheckPage() {
                         type="file"
                         onChange={(e) => handleFileSelect(e.target.files?.[0] || null, 'syllabus')}
                         disabled={isAnalyzing}
-                        accept=".pdf,.doc,.docx,.txt"
+                        accept=".pdf,.doc,.docx,.txt,.md"
                         className="cursor-pointer"
                       />
                     )}
@@ -247,7 +269,7 @@ export default function CLOCheckPage() {
                         type="file"
                         onChange={(e) => handleFileSelect(e.target.files?.[0] || null, 'clo')}
                         disabled={isAnalyzing}
-                        accept=".pdf,.doc,.docx,.txt,.xlsx,.xls"
+                        accept=".pdf,.doc,.docx,.txt,.xlsx,.xls,.md"
                         className="cursor-pointer"
                       />
                     )}

@@ -4,21 +4,53 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Upload, FileText, Settings, Download, Loader2, CheckCircle2, XCircle, FileDown, X } from "lucide-react"
+import { Upload, FileText, Settings, Download, Loader2, CheckCircle2, XCircle, FileDown, X, ArrowLeft } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { suggestCLO, CLOSuggestResult } from "@/services/clo.service"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
+
+const defaultPrompt = `Bạn là một chuyên gia thiết kế chương trình đào tạo đại học.
+Cho đề cương học phần sau, hãy đề xuất **{num_clo} Chuẩn đầu ra học phần (CLO)**.
+Yêu cầu: mỗi CLO cụ thể, đo lường được, có động từ Bloom, phủ kiến thức/kỹ năng/thái độ.
+Ngôn ngữ: tiếng Việt.
+
+## Ràng buộc chất lượng
+- **Mỗi CLO** là **một câu** mô tả hành vi có thể **đánh giá** được, dùng **động từ Bloom** rõ ràng.  (Heading 2)
+- Gắn nhãn **I/R/M** ngay cuối câu để thể hiện mức độ curriculum mapping.
+  *I* = Introduce, *R* = Reinforce, *M* = Master.
+- **Giải thích lý do** lựa chọn mức I/R/M: nêu rõ *phần, chương hoặc hoạt động* trong syllabus hỗ trợ người học đạt mức đó.  (Heading 3)
+- **Cân bằng cấp độ tư duy Bloom** – ít nhất một CLO ở mức *Phân tích/Đánh giá/Sáng tạo*.
+- **Không thêm nội dung ngoài syllabus**; nếu thiếu thông tin, ghi “(chưa đủ dữ liệu)” ở phần giải thích.
+
+**BẮT BUỘC**: Trả về kết quả dưới dạng bảng Markdown với format chính xác:
+
+| STT | Mã CLO | Nội dung | Mức độ tư duy | Giải thích |
+|-----|--------|----------|---------------|-----------|
+| 1   | CLO1   | Mô tả chi tiết CLO1 | I | Cơ sở từ chương/phần nào trong syllabus |
+| 2   | CLO2   | Mô tả chi tiết CLO2 | R | Cơ sở từ chương/phần nào trong syllabus |
+| 3   | CLO3   | Mô tả chi tiết CLO3 | M | Cơ sở từ chương/phần nào trong syllabus |
+
+Lưu ý mức độ tư duy: 
+- I (Introduce): Giới thiệu kiến thức cơ bản
+- R (Reinforce): Củng cố và vận dụng
+- M (Master): Thành thạo và sáng tạo
+
+Cột "Giải thích" phải nêu rõ cơ sở từ syllabus (chương, phần, nội dung cụ thể) làm căn cứ cho CLO đó.
+
+Chỉ trả về bảng markdown, không có text hay giải thích nào khác.`
 export default function CLOSuggestPage() {
+  const router = useRouter()
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisStatus, setAnalysisStatus] = useState<"idle" | "analyzing" | "success" | "fail">("idle")
   const [analysisResult, setAnalysisResult] = useState<CLOSuggestResult | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
   const [selectedSyllabusFile, setSelectedSyllabusFile] = useState<File | null>(null)
-  const [prompt, setPrompt] = useState("")
+  const [prompt, setPrompt] = useState(defaultPrompt)
   
   const paramFileRef = useRef<HTMLInputElement>(null)
   const syllabusFileRef = useRef<HTMLInputElement>(null)
@@ -150,7 +182,17 @@ export default function CLOSuggestPage() {
       <Sidebar />
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">CLO Suggest</h2>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/clo')}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h2 className="text-3xl font-bold tracking-tight">CLO Suggest</h2>
+          </div>
         </div>
 
         <Card>
@@ -197,7 +239,7 @@ export default function CLOSuggestPage() {
                         type="file"
                         onChange={(e) => handleFileSelect(e.target.files?.[0] || null, 'syllabus')}
                         disabled={isAnalyzing}
-                        accept=".pdf,.doc,.docx,.txt"
+                        accept=".pdf,.doc,.docx,.txt,.md"
                         className="cursor-pointer"
                       />
                     )}
@@ -306,34 +348,38 @@ export default function CLOSuggestPage() {
                   </div>
                 )}
 
-                {analysisResult.cloList && analysisResult.cloList.length > 0 && (
+                {analysisResult.cloTable && analysisResult.cloTable.length > 0 && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Danh sách CLO</h3>
-                    <ScrollArea className="h-64 w-full">
+                    <ScrollArea className="h-96 w-full">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>STT</TableHead>
-                            <TableHead>Mã CLO</TableHead>
-                            <TableHead>Nội dung</TableHead>
-                            <TableHead>Mức độ tư duy</TableHead>
+                            <TableHead className="w-16">STT</TableHead>
+                            <TableHead className="w-24">Mã CLO</TableHead>
+                            <TableHead className="w-1/3">Nội dung</TableHead>
+                            <TableHead className="w-24">Mức độ tư duy</TableHead>
+                            <TableHead className="w-1/3">Giải thích</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {analysisResult.cloList.map((clo: any, index: number) => (
+                          {analysisResult.cloTable.map((clo: any, index: number) => (
                             <TableRow key={index}>
-                              <TableCell>{index + 1}</TableCell>
-                              <TableCell className="font-medium">{clo.code || `CLO${index + 1}`}</TableCell>
-                              <TableCell>{clo.content || clo.description}</TableCell>
-                              <TableCell>
+                              <TableCell className="text-center">{clo.stt}</TableCell>
+                              <TableCell className="font-medium">{clo.maCLO}</TableCell>
+                              <TableCell className="whitespace-pre-wrap">{clo.noiDung}</TableCell>
+                              <TableCell className="text-center">
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  clo.level === 'Apply' ? 'bg-blue-100 text-blue-800' :
-                                  clo.level === 'Create' ? 'bg-green-100 text-green-800' :
-                                  clo.level === 'Analyze' ? 'bg-purple-100 text-purple-800' :
+                                  clo.mucDoTuDuy === 'I' ? 'bg-blue-100 text-blue-800' :
+                                  clo.mucDoTuDuy === 'R' ? 'bg-green-100 text-green-800' :
+                                  clo.mucDoTuDuy === 'M' ? 'bg-purple-100 text-purple-800' :
                                   'bg-gray-100 text-gray-800'
                                 }`}>
-                                  {clo.level || 'N/A'}
+                                  {clo.mucDoTuDuy || 'N/A'}
                                 </span>
+                              </TableCell>
+                              <TableCell className="whitespace-pre-wrap text-sm text-gray-600">
+                                {clo.giaiThich || 'N/A'}
                               </TableCell>
                             </TableRow>
                           ))}

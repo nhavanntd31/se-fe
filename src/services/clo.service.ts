@@ -24,6 +24,13 @@ export interface CLOSuggestResult {
   excel: string
   markdownContent: string
   cloList: any[]
+  cloTable: {
+    stt: number
+    maCLO: string
+    noiDung: string
+    mucDoTuDuy: 'I' | 'R' | 'M'
+    giaiThich?: string
+  }[]
   markdownContentType: string
   excelContentType: string
   error?: string
