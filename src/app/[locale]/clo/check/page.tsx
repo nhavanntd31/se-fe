@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Upload, FileText, Settings, Download, Loader2, CheckCircle2, XCircle, FileDown, X, ArrowLeft } from "lucide-react"
+import { Upload, FileText, Settings, Download, Loader2, CheckCircle2, XCircle, FileDown, X, ArrowLeft, CrossIcon, MinusIcon } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
@@ -32,6 +32,7 @@ export default function CLOCheckPage() {
   const [selectedSyllabusFile, setSelectedSyllabusFile] = useState<File | null>(null)
   const [selectedCLOFile, setSelectedCLOFile] = useState<File | null>(null)
   const [prompt, setPrompt] = useState(defaultPrompt)
+  const [showParameterFileBlock, setShowParameterFileBlock] = useState(false)
   
   const paramFileRef = useRef<HTMLInputElement>(null)
   const syllabusFileRef = useRef<HTMLInputElement>(null)
@@ -176,7 +177,7 @@ export default function CLOCheckPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar showOnlyPLOCLO={true} />
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -278,7 +279,15 @@ export default function CLOCheckPage() {
 
                 <div className="space-y-4">
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <label htmlFor="paramFile" className="text-sm font-medium">Parameter File (Tùy chọn)</label>
+                    <p className="text-sm font-medium">
+                      Parameter File (Tùy chọn)
+                      {showParameterFileBlock ?
+                        <MinusIcon className="inline ms-1 h-4 w-4 cursor-pointer" onClick={() => setShowParameterFileBlock(false)} /> :
+                        <CrossIcon className="inline ms-1 h-4 w-4 cursor-pointer" onClick={() => setShowParameterFileBlock(true)} />}
+                    </p>
+                  </div>
+
+                  {showParameterFileBlock && <div>
                     <Input 
                       id="paramFile" 
                       ref={paramFileRef} 
@@ -287,31 +296,31 @@ export default function CLOCheckPage() {
                       className="col-span-4"
                       disabled={isAnalyzing}
                     />
-                  </div>
-                  
-                  <div className="bg-gray-50 p-3 rounded-lg text-sm">
-                    <div className="font-medium mb-2 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Settings className="h-4 w-4" />
-                        Parameter File Example:
+
+                    <div className="bg-gray-50 p-3 rounded-lg text-sm">
+                      <div className="font-medium mb-2 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          Parameter File Example:
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleDownloadExampleParam}
+                          className="gap-1 text-xs h-7"
+                        >
+                          <FileDown className="h-3 w-3" />
+                          Download Example
+                        </Button>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleDownloadExampleParam}
-                        className="gap-1 text-xs h-7"
-                      >
-                        <FileDown className="h-3 w-3" />
-                        Download Example
-                      </Button>
+                      <Textarea
+                        value={exampleParamContent}
+                        readOnly
+                        className="text-xs font-mono bg-white"
+                        rows={6}
+                      />
                     </div>
-                    <Textarea
-                      value={exampleParamContent}
-                      readOnly
-                      className="text-xs font-mono bg-white"
-                      rows={6}
-                    />
-                  </div>
+                  </div>}
                 </div>
               </div>
             </div>

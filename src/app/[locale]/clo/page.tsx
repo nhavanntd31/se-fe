@@ -9,7 +9,7 @@ import Link from "next/link"
 export default function CLOPage() {
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar showOnlyPLOCLO={true} />
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">CLO Management</h2>
@@ -35,7 +35,7 @@ export default function CLOPage() {
               </ul>
               <Link href="/clo/suggest">
                 <Button className="w-full gap-2">
-                  Bắt đầu tạo CLO
+                  Tạo CLO
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -60,7 +60,7 @@ export default function CLOPage() {
                 <li>• Báo cáo đánh giá chi tiết</li>
               </ul>
               <Link href="/clo/check">
-                <Button variant="outline" className="w-full gap-2">
+                <Button className="w-full gap-2">
                   Kiểm tra CLO
                   <ArrowRight className="h-4 w-4" />
                 </Button>

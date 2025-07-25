@@ -12,9 +12,11 @@ import { NotificationPanel } from "./notification-panel"
 import { getNotifications } from "@/services/notification.service"
 import { Badge } from "@/components/ui/badge"
 
-interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
+  showOnlyPLOCLO?: boolean;
+}
 
-export function Sidebar({ className }: SidebarProps) {
+export function Sidebar({ className, showOnlyPLOCLO = false }: SidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -58,9 +60,10 @@ export function Sidebar({ className }: SidebarProps) {
           {/* <h2 className="text-xl font-bold tracking-tight">SCEE</h2> */}
         </motion.div>
         <div className="mt-auto">
-        <UserProfile />
-      </div>
-        <div className="px-4 py-2">
+          <UserProfile />
+        </div>
+
+        {!showOnlyPLOCLO && <div className="px-4 py-2">
           <h2 className="mb-2 px-2 text-xs font-semibold tracking-tight text-muted-foreground">
             Trường SEEE
           </h2>
@@ -146,8 +149,9 @@ export function Sidebar({ className }: SidebarProps) {
               </Button>
             </motion.div>
           </div>
-        </div>
-        <div className="px-4 py-2">
+        </div>}
+
+        {!showOnlyPLOCLO && <div className="px-4 py-2">
           <h2 className="mb-2 px-2 text-xs font-semibold tracking-tight text-muted-foreground">
             TOOLS
           </h2>
@@ -160,7 +164,23 @@ export function Sidebar({ className }: SidebarProps) {
                 </Button>
               </Link>
             </motion.div>
+  
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link href="/prediction">
+                <Button variant={isActive('/prediction') ? "secondary" : "ghost"} className="w-full justify-start gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Thử mô hình
+                </Button>
+              </Link>
+            </motion.div>
+          </div>
+        </div>}
 
+        <div className="px-4 py-2">
+          <h2 className="mb-2 px-2 text-xs font-semibold tracking-tight text-muted-foreground">
+            PLO/CLO
+          </h2>
+          <div className="space-y-1">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link href="/plo">
                 <Button variant={isActive('/plo') ? "secondary" : "ghost"} className="w-full justify-start gap-2">
@@ -175,15 +195,6 @@ export function Sidebar({ className }: SidebarProps) {
                 <Button variant={isActive('/clo') ? "secondary" : "ghost"} className="w-full justify-start gap-2">
                   <CheckCircle className="h-4 w-4" />
                   CLO Management
-                </Button>
-              </Link>
-            </motion.div>
-  
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link href="/prediction">
-                <Button variant={isActive('/prediction') ? "secondary" : "ghost"} className="w-full justify-start gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Thử mô hình
                 </Button>
               </Link>
             </motion.div>

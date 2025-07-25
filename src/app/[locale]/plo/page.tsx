@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Upload, FileText, Settings, Download, Loader2, CheckCircle2, XCircle, FileDown, Files, X } from "lucide-react"
+import { Upload, FileText, Settings, Download, Loader2, CheckCircle2, XCircle, FileDown, Files, X, CrossIcon, MinusIcon } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel"
 import { useState, useRef } from "react"
@@ -13,13 +13,51 @@ import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
+const defaultPrompt = `# Phân tích chuẩn đầu ra chương trình đào tạo (PLO) theo khung phân loại Bloom hai chiều
+
+## Bước 1: Phân tích từng PLO
+Với mỗi PLO được cung cấp, hãy:
+1. **Đánh giá tính đúng quy định**: PLO có rõ ràng, cụ thể, đo lường được và định hướng năng lực không? Có đúng cấu trúc không?
+2. **Xác định nhóm thuộc tính PLO** theo 6 nhóm phổ biến:
+   - Kiến thức chuyên môn
+   - Kỹ năng nghề nghiệp
+   - Năng lực giải quyết vấn đề
+   - Năng lực giao tiếp & làm việc nhóm
+   - Năng lực học tập suốt đời
+   - Năng lực đạo đức & trách nhiệm xã hội
+3. **Ánh xạ PLO vào Thang Bloom hai chiều**:
+   - Chiều tiến trình nhận thức: [Remember, Understand, Apply, Analyze, Evaluate, Create]
+   - Chiều loại kiến thức: [Factual Knowledge, Conceptual Knowledge, Procedural Knowledge, Meta-Cognitive Knowledge]
+
+**Lưu ý**: Tránh các động từ không đo lường được như: Hiểu, Biết, Nắm được, Nhận thấy, Chấp nhận, Có kiến thức về, Nhận thức được, Có ý thức về, Học được, Nhận biết, Hình thành giá trị, Chấp nhận, Làm quen với.
+
+## Bước 2: Trình bày kết quả
+- Viết phân tích chi tiết dưới dạng đoạn văn cho từng PLO, nêu rõ:
+  - PLO có phù hợp và hiệu lực không?
+  - PLO thuộc nhóm năng lực nào?
+  - Lý do lựa chọn mức độ nhận thức và loại kiến thức tương ứng.
+- Mỗi phân tích PLO phải bắt đầu bằng tiêu đề: \`### Phân tích: <PLO_ID>\`
+- Tổng hợp tất cả các PLO vào một bảng ánh xạ Bloom ở cuối dưới dạng bảng Markdown:
+
+| Mã PLO | Mô tả rút gọn | Nhóm Năng lực | Tiến trình nhận thức | Loại kiến thức |
+|--------|---------------|---------------|----------------------|----------------|
+| PLO1   | Mô tả ngắn gọn | | | |
+
+## Yêu cầu định dạng:
+- Đầu ra sử dụng Markdown, có tiêu đề rõ ràng cho từng phần.
+- Phân tích từng PLO theo thứ tự cung cấp, gắn nhãn rõ ràng (PLO01, PLO02, …).
+- Trình bày bảng gọn gàng, dễ đọc.
+- Chỉ trình bày kết quả phân tích, không diễn giải thêm.`;
+
+
 export default function PLOPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisStatus, setAnalysisStatus] = useState<"idle" | "analyzing" | "success" | "fail">("idle")
   const [analysisResult, setAnalysisResult] = useState<PLOAnalysisResponse | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [prompt, setPrompt] = useState("")
+  const [prompt, setPrompt] = useState(defaultPrompt)
+  const [showParameterFileBlock, setShowParameterFileBlock] = useState(false)
   
   const paramFileRef = useRef<HTMLInputElement>(null)
 
@@ -162,7 +200,7 @@ export default function PLOPage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar showOnlyPLOCLO={true} />
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">PLO Analysis</h2>
@@ -262,7 +300,15 @@ export default function PLOPage() {
 
               <div className="space-y-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <label htmlFor="paramFile" className="text-sm font-medium">Parameter File</label>
+                  <p className="text-sm font-medium">
+                    Parameter File
+                    {showParameterFileBlock ?
+                      <MinusIcon className="inline ms-1 h-4 w-4 cursor-pointer" onClick={() => setShowParameterFileBlock(false)} /> :
+                      <CrossIcon className="inline ms-1 h-4 w-4 cursor-pointer" onClick={() => setShowParameterFileBlock(true)} />}
+                  </p>
+                </div>
+
+                {showParameterFileBlock && <div>
                   <Input 
                     id="paramFile" 
                     ref={paramFileRef} 
@@ -270,31 +316,31 @@ export default function PLOPage() {
                     accept=".json" 
                     className="col-span-4"
                   />
-                </div>
-                
-                <div className="bg-gray-50 p-3 rounded-lg text-sm">
-                  <div className="font-medium mb-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" />
-                      Parameter File Example:
+
+                  <div className="bg-gray-50 p-3 rounded-lg text-sm">
+                    <div className="font-medium mb-2 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Parameter File Example:
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleDownloadExampleParam}
+                        className="gap-1 text-xs h-7"
+                      >
+                        <FileDown className="h-3 w-3" />
+                        Download Example
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleDownloadExampleParam}
-                      className="gap-1 text-xs h-7"
-                    >
-                      <FileDown className="h-3 w-3" />
-                      Download Example
-                    </Button>
+                    <Textarea
+                      value={exampleParamContent}
+                      readOnly
+                      className="text-xs font-mono bg-white"
+                      rows={8}
+                    />
                   </div>
-                  <Textarea
-                    value={exampleParamContent}
-                    readOnly
-                    className="text-xs font-mono bg-white"
-                    rows={8}
-                  />
-                </div>
+                </div>}
               </div>
             </div>
             
