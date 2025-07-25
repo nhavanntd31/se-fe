@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { authService } from '@/services/auth.service'
+import { authService, UserPermission } from '@/services/auth.service'
 import { Eye, EyeOff } from 'lucide-react'
 import Image from 'next/image'
 import Logo from "@/public/assets/images/logo2.png"
@@ -25,7 +25,12 @@ export default function LoginPage() {
 
     try {
       await authService.login({ email, password })
-      router.push('/')
+      const user = await authService.getUserInfo()
+      if (user.permission === UserPermission.USER_PCLO) {
+        router.push('/plo')
+      } else {
+        router.push('/')
+      }
     } catch (err: any) {
       setError(err.message || 'Đăng nhập thất bại')
     } finally {

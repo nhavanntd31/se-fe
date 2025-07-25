@@ -19,11 +19,17 @@ export interface LoginResponse {
   isVerified: boolean;
 }
 
+export enum UserPermission {
+  USER_ALL = 'user_all',
+  USER_PCLO = 'user_pclo'
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
   role: string;
+  permission: UserPermission;
 }
 
 class AuthService {
