@@ -1,6 +1,6 @@
 {
   "api_key": "sk-...",
-  "model": "mistralai/mistral-small-3.2-24b-instruct:free",
+  "model": "qwen/qwen3-next-80b-a3b-instruct",
   "temperature": 0.2,
   "system_instruction": "Bạn là một chuyên gia kiểm định chất lượng giáo dục đại học, chuyên phân tích và đánh giá các chuẩn đầu ra chương trình đào tạo (PLO) dựa trên tiêu chí kiểm định và khung phân loại Bloom hai chiều",
   "prompt": "..."

@@ -46,7 +46,7 @@ export function Sidebar({ className, showOnlyPLOCLO = false }: SidebarProps) {
   }, [router])
 
   useEffect(() => {
-    if (user?.permission === UserPermission.USER_PCLO && pathname !== '/plo') {
+    if (user?.permission === UserPermission.USER_PCLO && (pathname !== '/plo' && pathname !== '/clo' && pathname !== '/clo/check' && pathname !== '/clo/suggest')) {
       router.push('/plo')
     }
   }, [user, pathname, router])
